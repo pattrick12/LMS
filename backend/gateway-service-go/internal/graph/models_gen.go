@@ -2,9 +2,36 @@
 
 package graph
 
+type Announcement struct {
+	Content   string `json:"content"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type Assignment struct {
+	ID          string  `json:"id"`
+	ClassroomID string  `json:"classroomId"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	DueDate     *string `json:"dueDate,omitempty"`
+	TotalPoints *int    `json:"totalPoints,omitempty"`
+}
+
 type AuthResponse struct {
 	Token string `json:"token"`
 	User  *User  `json:"user"`
+}
+
+type Classroom struct {
+	ID            string          `json:"id"`
+	CourseID      string          `json:"courseId"`
+	Name          string          `json:"name"`
+	Semester      string          `json:"semester"`
+	Instructor    *User           `json:"instructor,omitempty"`
+	Students      []*User         `json:"students,omitempty"`
+	Tas           []*User         `json:"tas,omitempty"`
+	Modules       []*Module       `json:"modules,omitempty"`
+	Announcements []*Announcement `json:"announcements,omitempty"`
+	Assignments   []*Assignment   `json:"assignments,omitempty"`
 }
 
 type Course struct {
@@ -14,6 +41,14 @@ type Course struct {
 	Description *string `json:"description,omitempty"`
 	Credits     int     `json:"credits"`
 	Instructor  *User   `json:"instructor,omitempty"`
+}
+
+type CreateAssignmentInput struct {
+	ClassroomID string  `json:"classroomId"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	DueDate     *string `json:"dueDate,omitempty"`
+	TotalPoints int     `json:"totalPoints"`
 }
 
 type CreateCourseInput struct {
@@ -35,10 +70,21 @@ type CreateUserInput struct {
 	InstructorProfile *InstructorProfileInput `json:"instructorProfile,omitempty"`
 }
 
+type GradeSubmissionInput struct {
+	SubmissionID string `json:"submissionId"`
+	Grade        int    `json:"grade"`
+}
+
 type InstructorProfileInput struct {
 	FullName   string  `json:"fullName"`
 	EmployeeID string  `json:"employeeId"`
 	Department *string `json:"department,omitempty"`
+}
+
+type Module struct {
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"createdAt"`
 }
 
 type Mutation struct {
@@ -57,6 +103,21 @@ type StudentProfileInput struct {
 	FullName string  `json:"fullName"`
 	RollNo   string  `json:"rollNo"`
 	Branch   *string `json:"branch,omitempty"`
+}
+
+type Submission struct {
+	ID           string `json:"id"`
+	AssignmentID string `json:"assignmentId"`
+	Student      *User  `json:"student"`
+	Content      string `json:"content"`
+	SubmittedAt  string `json:"submittedAt"`
+	Grade        *int   `json:"grade,omitempty"`
+	GradedBy     *User  `json:"gradedBy,omitempty"`
+}
+
+type SubmitWorkInput struct {
+	AssignmentID string `json:"assignmentId"`
+	Content      string `json:"content"`
 }
 
 type User struct {

@@ -1,4 +1,5 @@
-# The User type represents a user's core identity.
+
+
 type User {
   id: ID!
   email: String!
@@ -6,13 +7,13 @@ type User {
   fullName: String
 }
 
-# The AuthResponse is what we send back after a successful login.
 type AuthResponse {
   token: String!
   user: User!
 }
 
-# Represents a course in the university catalog.
+
+
 type Course {
   id: ID!
   courseCode: String!
@@ -22,14 +23,64 @@ type Course {
   instructor: User
 }
 
-# Represents a student's enrollment in a course for a semester.
 type Registration {
   courseID: ID!
   semester: String!
   course: Course
 }
 
-# --- NEW: Input types for creating users ---
+
+
+type Module {
+  title: String!
+  content: String!
+  createdAt: String! # ISO 8601 Timestamp
+}
+
+# A classroom announcement.
+type Announcement {
+  content: String!
+  createdAt: String! # ISO 8601 Timestamp
+}
+
+# Represents an assignment for a classroom.
+type Assignment {
+  id: ID! # MongoDB ObjectId
+  classroomId: ID!
+  title: String!
+  description: String
+  dueDate: String # ISO 8601 Timestamp
+  totalPoints: Int
+}
+
+# Represents a student's submitted work for an assignment.
+type Submission {
+  id: ID! # MongoDB ObjectId
+  assignmentId: ID!
+  student: User!
+  content: String!
+  submittedAt: String! # ISO 8601 Timestamp
+  grade: Int
+  gradedBy: User
+}
+
+# Represents the "Google Classroom" view (from Classroom Service).
+# This is the expanded version of your 'Classroom' type.
+type Classroom {
+  id: ID! # This is the MongoDB ObjectId
+  courseId: ID! # This is the Postgres Course UUID
+  name: String!
+  semester: String!
+  instructor: User
+  students: [User!]
+  tas: [User!]
+  modules: [Module!]
+  announcements: [Announcement!]
+  assignments: [Assignment!]
+}
+
+# --- Existing Input Types ---
+
 input StudentProfileInput {
   fullName: String!
   rollNo: String!
@@ -42,7 +93,6 @@ input InstructorProfileInput {
   department: String
 }
 
-# This is the main input for the createUser mutation.
 input CreateUserInput {
   email: String!
   password: String!
@@ -51,7 +101,6 @@ input CreateUserInput {
   instructorProfile: InstructorProfileInput
 }
 
-# Input type for creating a new course.
 input CreateCourseInput {
   courseCode: String!
   name: String!
@@ -63,19 +112,64 @@ input CreateCourseInput {
   prerequisiteIds: [ID!]
 }
 
-# Defines all the "read" operations the frontend can perform.
+# --- NEW: Classroom Service Input Types ---
+
+input CreateAssignmentInput {
+  classroomId: ID!
+  title: String!
+  description: String!
+  dueDate: String # ISO 8601 string
+  totalPoints: Int!
+}
+
+input SubmitWorkInput {
+  assignmentId: ID!
+  content: String! # Could be text or a URL to an uploaded file
+}
+
+input GradeSubmissionInput {
+  submissionId: ID!
+  grade: Int!
+}
+
+
+# Defines all "read" operations.
 type Query {
+  # --- Existing Queries ---
   me: User
   courses: [Course!]
   myRegistrations: [Registration!]
+
+  myClassrooms: [Classroom!]
+  getClassroomDetails(classroomId: ID!): Classroom
+  getAssignmentSubmissions(assignmentId: ID!): [Submission!] # For Instructors/TAs
+  getMySubmission(assignmentId: ID!): Submission # For Students
 }
 
-# Defines all the "write" operations the frontend can perform.
+
+# Defines all "write" operations.
 type Mutation {
+  # --- Existing Mutations ---
   login(email: String!, password: String!): AuthResponse!
-  # --- NEW: Admin mutation to create a user ---
   createUser(input: CreateUserInput!): User!
   createCourse(input: CreateCourseInput!): Course!
   registerForCourse(courseId: ID!, semester: String!): Registration!
-}
 
+  # --- NEW: Classroom Mutations ---
+
+  # Triggers the automatic enrollment sync.
+  syncClassroom(courseId: ID!, semester: String!): Classroom!
+
+  # (Instructor/TA) Post content
+  postModule(classroomId: ID!, title: String!, content: String!): Classroom!
+  postAnnouncement(classroomId: ID!, content: String!): Classroom!
+
+  # (Instructor/TA) Create an assignment
+  createAssignment(input: CreateAssignmentInput!): Assignment!
+
+  # (Student/TA) Submit work
+  submitWork(input: SubmitWorkInput!): Submission!
+
+  # (Instructor/TA) Grade work
+  gradeSubmission(input: GradeSubmissionInput!): Submission!
+}

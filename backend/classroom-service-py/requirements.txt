@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+motor
+pydantic==2.8.2
+python-jose[cryptography]
+python-multipart

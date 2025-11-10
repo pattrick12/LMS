@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // ... (ERPServiceClient, CourseResponse, RegistrationResponse, ListCourses, CreateCourse, RegisterForCourse remain the same) ...
@@ -119,4 +120,29 @@ func (c *ERPServiceClient) RegisterForCourse(token, courseID, semester string) (
 		CourseID: courseID,
 		Semester: semester,
 	}, nil
+}
+func (c *ERPServiceClient) GetCourseByID(token string, courseID string) (*ERPCourseResponse, error) {
+	req, err := http.NewRequest("GET", c.BaseURL+"/courses/"+courseID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", token)
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ERP service returned non-200 status for get course: %d", resp.StatusCode)
+	}
+
+	var courseResp ERPCourseResponse
+	if err := json.NewDecoder(resp.Body).Decode(&courseResp); err != nil {
+		return nil, fmt.Errorf("failed to decode get course response: %w", err)
+	}
+
+	return &courseResp, nil
 }

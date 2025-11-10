@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"gateway/internal/services"
 	"strings"
 )
@@ -95,6 +96,94 @@ func (r *mutationResolver) RegisterForCourse(ctx context.Context, courseID strin
 	}, nil
 }
 
+// SyncClassroom is the resolver for the syncClassroom field.
+func (r *mutationResolver) SyncClassroom(ctx context.Context, courseID string, semester string) (*Classroom, error) {
+	// 1. Get token from context
+	authHeader, _ := ctx.Value(authTokenKey).(string)
+
+	// 2. Initialize clients for all 3 services
+	erpClient := services.ERPServiceClient{BaseURL: "http://localhost:8082"}
+	authClient := services.AuthServiceClient{BaseURL: "http://localhost:8081"}
+	// This is your new Python service
+	classroomClient := services.ClassroomServiceClient{BaseURL: "http://localhost:8083"}
+
+	// 3. Get the Course details (for name and instructorId)
+	// This method now exists
+	courseResp, err := erpClient.GetCourseByID(authHeader, courseId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get course from ERP: %w", err)
+	}
+
+	// 4. Get the student roster from ERP service
+	// This endpoint already exists!
+	roster, err := erpClient.GetCourseRoster(authHeader, courseId, semester)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get roster from ERP: %w", err)
+	}
+
+	var studentIDs []string
+	for _, reg := range roster {
+		studentIDs = append(studentIDs, reg.UserID)
+	}
+
+	// 5. Call the new classroom service's /sync endpoint
+	syncPayload := map[string]interface{}{
+		"course_id":     courseId,
+		"instructor_id": courseResp.InstructorID,
+		"semester":      semester,
+		"name":          fmt.Sprintf("%s (%s)", courseResp.Name, semester),
+		"student_ids":   studentIDs,
+	}
+
+	// This method now exists
+	classroomResp, err := classroomClient.SyncClassroom(authHeader, syncPayload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync classroom: %w", err)
+	}
+
+	// 6. Get instructor details
+	instructor, _ := authClient.GetUserByID(authHeader, courseResp.InstructorID)
+
+	// 7. FIX: Remove "graph." prefix
+	return &Classroom{
+		ID:       classroomResp.ID,
+		CourseId: classroomResp.CourseID,
+		Name:     classroomResp.Name,
+		Semester: classroomResp.Semester,
+		Instructor: &User{ // <-- FIX: Removed "graph."
+			ID:       instructor.ID,
+			Email:    instructor.Email,
+			Role:     instructor.Role,
+			FullName: &instructor.FullName,
+		},
+	}, nil
+}
+
+// PostModule is the resolver for the postModule field.
+func (r *mutationResolver) PostModule(ctx context.Context, classroomID string, title string, content string) (*Classroom, error) {
+	panic(fmt.Errorf("not implemented: PostModule - postModule"))
+}
+
+// PostAnnouncement is the resolver for the postAnnouncement field.
+func (r *mutationResolver) PostAnnouncement(ctx context.Context, classroomID string, content string) (*Classroom, error) {
+	panic(fmt.Errorf("not implemented: PostAnnouncement - postAnnouncement"))
+}
+
+// CreateAssignment is the resolver for the createAssignment field.
+func (r *mutationResolver) CreateAssignment(ctx context.Context, input CreateAssignmentInput) (*Assignment, error) {
+	panic(fmt.Errorf("not implemented: CreateAssignment - createAssignment"))
+}
+
+// SubmitWork is the resolver for the submitWork field.
+func (r *mutationResolver) SubmitWork(ctx context.Context, input SubmitWorkInput) (*Submission, error) {
+	panic(fmt.Errorf("not implemented: SubmitWork - submitWork"))
+}
+
+// GradeSubmission is the resolver for the gradeSubmission field.
+func (r *mutationResolver) GradeSubmission(ctx context.Context, input GradeSubmissionInput) (*Submission, error) {
+	panic(fmt.Errorf("not implemented: GradeSubmission - gradeSubmission"))
+}
+
 // Me is the resolver for the me query.
 func (r *queryResolver) Me(ctx context.Context) (*User, error) {
 	authHeader, _ := ctx.Value(authTokenKey).(string)
@@ -170,6 +259,26 @@ func (r *queryResolver) MyRegistrations(ctx context.Context) ([]*Registration, e
 	}
 
 	return gqlRegistrations, nil
+}
+
+// MyClassrooms is the resolver for the myClassrooms field.
+func (r *queryResolver) MyClassrooms(ctx context.Context) ([]*Classroom, error) {
+	panic(fmt.Errorf("not implemented: MyClassrooms - myClassrooms"))
+}
+
+// GetClassroomDetails is the resolver for the getClassroomDetails field.
+func (r *queryResolver) GetClassroomDetails(ctx context.Context, classroomID string) (*Classroom, error) {
+	panic(fmt.Errorf("not implemented: GetClassroomDetails - getClassroomDetails"))
+}
+
+// GetAssignmentSubmissions is the resolver for the getAssignmentSubmissions field.
+func (r *queryResolver) GetAssignmentSubmissions(ctx context.Context, assignmentID string) ([]*Submission, error) {
+	panic(fmt.Errorf("not implemented: GetAssignmentSubmissions - getAssignmentSubmissions"))
+}
+
+// GetMySubmission is the resolver for the getMySubmission field.
+func (r *queryResolver) GetMySubmission(ctx context.Context, assignmentID string) (*Submission, error) {
+	panic(fmt.Errorf("not implemented: GetMySubmission - getMySubmission"))
 }
 
 // Mutation returns MutationResolver implementation.

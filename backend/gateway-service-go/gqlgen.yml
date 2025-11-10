@@ -1,0 +1,19 @@
+# Where is our schema?
+schema:
+  - internal/graph/schema.graphqls
+
+# Where do we want to generate the files?
+exec:
+  filename: internal/graph/generated.go
+  package: graph
+
+# Tell gqlgen where our models are located.
+model:
+  filename: internal/graph/models_gen.go
+  package: graph
+
+# Where should the resolver implementations go?
+resolver:
+  layout: follow-schema
+  dir: internal/graph
+  package: graph

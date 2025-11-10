@@ -1,0 +1,8 @@
+go 1.24.6
+
+use (
+    ./backend/auth-service-go
+    ./backend/erp-service-go
+    ./backend/pkg
+	backend/gateway-service-go
+)

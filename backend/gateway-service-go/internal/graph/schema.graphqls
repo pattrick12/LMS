@@ -1,0 +1,81 @@
+# The User type represents a user's core identity.
+type User {
+  id: ID!
+  email: String!
+  role: String!
+  fullName: String
+}
+
+# The AuthResponse is what we send back after a successful login.
+type AuthResponse {
+  token: String!
+  user: User!
+}
+
+# Represents a course in the university catalog.
+type Course {
+  id: ID!
+  courseCode: String!
+  name: String!
+  description: String
+  credits: Int!
+  instructor: User
+}
+
+# Represents a student's enrollment in a course for a semester.
+type Registration {
+  courseID: ID!
+  semester: String!
+  course: Course
+}
+
+# --- NEW: Input types for creating users ---
+input StudentProfileInput {
+  fullName: String!
+  rollNo: String!
+  branch: String
+}
+
+input InstructorProfileInput {
+  fullName: String!
+  employeeId: String!
+  department: String
+}
+
+# This is the main input for the createUser mutation.
+input CreateUserInput {
+  email: String!
+  password: String!
+  role: String!
+  studentProfile: StudentProfileInput
+  instructorProfile: InstructorProfileInput
+}
+
+# Input type for creating a new course.
+input CreateCourseInput {
+  courseCode: String!
+  name: String!
+  description: String
+  credits: Int!
+  instructorId: ID!
+  semesterOffered: String
+  courseCap: Int
+  prerequisiteIds: [ID!]
+}
+
+# Defines all the "read" operations the frontend can perform.
+type Query {
+  me: User
+  courses: [Course!]
+  myRegistrations: [Registration!]
+}
+
+# Defines all the "write" operations the frontend can perform.
+type Mutation {
+  login(email: String!, password: String!): AuthResponse!
+  # --- NEW: Admin mutation to create a user ---
+  createUser(input: CreateUserInput!): User!
+  createCourse(input: CreateCourseInput!): Course!
+  registerForCourse(courseId: ID!, semester: String!): Registration!
+}
+
